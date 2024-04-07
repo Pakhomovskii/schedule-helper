@@ -1,5 +1,6 @@
 from datetime import time
 
+from gale_shapley_matching import TimeSlot, Auditorium, Group, Teacher, gale_shapley_matching
 
 group1 = Group("Calculus Study Group", 5)  # Small group
 group2 = Group("Chemistry Club", 12)  # Medium group
