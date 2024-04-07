@@ -1,142 +1,74 @@
+from datetime import time
+import streamlit as st
+from gale_shapley_matching import Group, Auditorium, TimeSlot, gale_shapley_matching, Teacher
 
-class Teacher:
-    def __init__(self, name, num_students, preferred_auditoriums):
-        self.name = name
-        self.num_students = num_students
-        self.preferred_auditoriums = preferred_auditoriums
+if __name__ == "__main__":
 
+    groups = {
+        "Calculus Study Group (5 students)": Group("Calculus Study Group", 5),
+        "Chemistry Club (12 students)": Group("Chemistry Club", 12),
+        "History Seminar (28 students)": Group("History Seminar", 28),
+    }
 
-class Auditorium:
-    def __init__(self, name, capacity, priorities):
-        self.name = name
-        self.capacity = capacity
-        self.priorities = priorities
+    auditoriums = {
+        "Classroom 101 (capacity 8)": Auditorium(
+            "Classroom 101", 8, "Tuesday", TimeSlot(time(10, 0), time(11, 30))
+        ),
+        "Lecture Hall B (capacity 20)": Auditorium(
+            "Lecture Hall B", 20, "Monday", TimeSlot(time(13, 0), time(15, 30))
+        ),
+        "Main Auditorium (capacity 35)": Auditorium(
+            "Main Auditorium", 35, "Wednesday", TimeSlot(time(9, 0), time(10, 30))
+        ),
+    }
 
+    st.title("Teacher Preferences for Auditoriums and Groups")
 
-def gale_shapley_matching(teachers, auditoriums):
-    unmatched_teachers = set(teacher.name for teacher in teachers)
-    teacher_matches = {}
-    auditorium_matches = {auditorium.name: None for auditorium in auditoriums}
-    auditorium_capacities = {auditorium.name: auditorium.capacity for auditorium in auditoriums}
+    tab1, tab2, tab3 = st.tabs(["Pr. Jonson", "Pr. Williams", "Pr. Lee"])
 
-    def get_priority(auditorium, num_students):
-        for capacity, priority in auditorium.priorities.items():
-            if num_students <= capacity:
-                return priority
-        return None
+    teachers = ["Emily Johnson", "Bob Williams", "Sarah Lee"]
 
-    max_iterations = len(teachers) * len(auditoriums)
-    iteration = 0
+    teacher_preferences = {}
 
-    while unmatched_teachers and iteration < max_iterations:
-        teacher_name = unmatched_teachers.pop()
-        teacher = next((t for t in teachers if t.name == teacher_name), None)
+    for i, tab in enumerate([tab1, tab2, tab3]):
+        with tab:
+            st.write(f"Preferences for {teachers[i]}")
 
-        for auditorium_name in teacher.preferred_auditoriums:
-            auditorium = next((a for a in auditoriums if a.name == auditorium_name), None)
-            if auditorium is None:
-                continue
+            group_choice = st.selectbox(
+                f"Choose your group (Teacher {i + 1})",
+                list(groups.keys()),
+                key=f"group{i}",
+            )
 
-            if auditorium_matches[auditorium.name] is None:
-                priority = get_priority(auditorium, teacher.num_students)
-                if priority is not None:
-                    teacher_matches[teacher.name] = auditorium.name
-                    auditorium_matches[auditorium.name] = teacher.name
-                    auditorium_capacities[auditorium.name] -= teacher.num_students
-                    break
-            else:
-                matched_teacher_name = auditorium_matches[auditorium.name]
-                matched_teacher = next((t for t in teachers if t.name == matched_teacher_name), None)
-                current_priority = get_priority(auditorium, teacher.num_students)
-                matched_priority = get_priority(auditorium, matched_teacher.num_students)
+            auditorium_choice = st.selectbox(
+                f"Choose your preferred auditorium (Teacher {i + 1})",
+                list(auditoriums.keys()),
+                key=f"auditorium{i}",
+            )
 
-                if current_priority is not None and (
-                        matched_priority is None or current_priority > matched_priority
-                ):
-                    teacher_matches[teacher.name] = auditorium.name
-                    auditorium_matches[auditorium.name] = teacher.name
-                    auditorium_capacities[auditorium.name] += matched_teacher.num_students
-                    auditorium_capacities[auditorium.name] -= teacher.num_students
-                    unmatched_teachers.add(matched_teacher_name)
-                    break
+            teacher_preferences[teachers[i]] = {
+                "group": group_choice,
+                "auditorium": auditorium_choice,
+            }
 
-        iteration += 1
+    if st.button("Finalize Choices and Match"):
 
-    return teacher_matches, unmatched_teachers
+        teachers_dict = {}
+        for teacher_name, prefs in teacher_preferences.items():
+            group_name = prefs['group']
+            teacher_group = groups[group_name]
 
+            name, surname = teacher_name.split()
+            teacher_obj = Teacher(name, surname, teacher_group)
 
-teachers = [
-    Teacher("T1", 15, ["A1_10", "A2_10", "A3_10"]),
-    Teacher("T2", 25, ["A2_10", "A3_10", "A1_10"]),
-    Teacher("T3", 20, ["A3_10", "A1_10", "A2_10"]),
-    Teacher("T4", 30, ["A1_10", "A3_10", "A2_10"]),
-    Teacher("T5", 10, ["A2_10", "A1_10", "A3_10"])
-]
+            teachers_dict[teacher_name] = teacher_obj
 
-auditoriums = [
-    Auditorium("A1_10", 30, {30: "high", 25: "medium", 20: "low"}),
-    Auditorium("A2_10", 25, {25: "high", 20: "medium", 15: "low"}),
-    Auditorium("A3_10", 20, {20: "high", 15: "medium", 10: "low"}),
-    Auditorium("A4_10", 30, {30: "high", 25: "medium", 20: "low"}),
-    Auditorium("A5_10", 25, {25: "high", 20: "medium", 15: "low"}),
-    Auditorium("A1_11", 20, {20: "high", 15: "medium", 10: "low"}),
-    Auditorium("A2_11", 20, {20: "high", 15: "medium", 10: "low"}),
-    Auditorium("A3_11", 30, {30: "high", 25: "medium", 20: "low"}),
-    Auditorium("A4_11", 25, {25: "high", 20: "medium", 15: "low"}),
-    Auditorium("A5_11", 20, {20: "high", 15: "medium", 10: "low"}),
-    Auditorium("A1_12", 30, {30: "high", 25: "medium", 20: "low"}),
-    Auditorium("A2_12", 25, {25: "high", 20: "medium", 15: "low"}),
-    Auditorium("A3_12", 20, {20: "high", 15: "medium", 10: "low"}),
-    Auditorium("A4_12", 20, {20: "high", 15: "medium", 10: "low"}),
-    Auditorium("A5_12", 20, {20: "high", 15: "medium", 10: "low"})
-]
+        matches, unmatched_teachers = gale_shapley_matching(teachers_dict, auditoriums)
+        st.subheader("Matching Results")
+        for teacher, matched_auditorium in matches.items():
+            st.write(f"{teacher} -> {matched_auditorium}")
 
-
-matches, unmatched_teachers = gale_shapley_matching(teachers, auditoriums)
-
-
-print("Matches:")
-for teacher, auditorium in matches.items():
-    print(f"{teacher} -> {auditorium}")
-
-print("\nUnmatched Teachers:")
-for teacher in unmatched_teachers:
-    print(teacher)
-
-
-teachers2 = [
-    Teacher("T1", 20, ["A1", "A2", "A3", "A4"]),
-    Teacher("T2", 30, ["A2", "A3", "A4", "A1"]),
-    Teacher("T3", 25, ["A3", "A4", "A1", "A2"]),
-    Teacher("T4", 15, ["A4", "A1", "A2", "A3"]),
-    Teacher("T5", 35, ["A1", "A2", "A3", "A4"]),
-    Teacher("T6", 40, ["A2", "A3", "A4", "A1"])
-]
-
-auditoriums2 = [
-    Auditorium("A1", 50, {50: "high", 40: "medium", 30: "low"}),
-    Auditorium("A2", 45, {45: "high", 35: "medium", 25: "low"}),
-    Auditorium("A3", 40, {40: "high", 30: "medium", 20: "low"}),
-    Auditorium("A4", 35, {35: "high", 25: "medium", 15: "low"})
-]
-
-# Входные данные 3
-teachers1 = [
-    Teacher("T1", 18, ["A1", "A2", "A3", "A4", "A5"]),
-    Teacher("T2", 22, ["A2", "A3", "A4", "A5", "A1"]),
-    Teacher("T3", 27, ["A3", "A4", "A5", "A1", "A2"]),
-    Teacher("T4", 16, ["A4", "A5", "A1", "A2", "A3"]),
-    Teacher("T5", 20, ["A5", "A1", "A2", "A3", "A4"]),
-    Teacher("T6", 24, ["A1", "A2", "A3", "A4", "A5"]),
-    Teacher("T7", 30, ["A2", "A3", "A4", "A5", "A1"])
-]
-
-auditoriums1 = [
-    Auditorium("A1", 40, {40: "high", 35: "medium", 30: "low"}),
-    Auditorium("A2", 35, {35: "high", 30: "medium", 25: "low"}),
-    Auditorium("A3", 30, {30: "high", 25: "medium", 20: "low"}),
-    Auditorium("A4", 25, {25: "high", 20: "medium", 15: "low"}),
-    Auditorium("A5", 20, {20: "high", 15: "medium", 10: "low"})
-]
-
-
+        if unmatched_teachers:
+            st.subheader("Unmatched Teachers")
+            for teacher in unmatched_teachers:
+                st.write(f"- {teacher}")
