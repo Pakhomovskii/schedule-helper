@@ -1,13 +1,14 @@
 import uuid
+from enum import Enum
 
 
-class SizeCategory:
+class SizeCategory(Enum):
     SMALL = "Small"
     MEDIUM = "Medium"
     LARGE = "Large"
 
 
-class Preference:
+class Preference(Enum):
     HIGH = 1
     MEDIUM = 0
     LOW = -1
@@ -20,6 +21,11 @@ class Teacher:
         self.surname = surname
         self.group = group
         self.schedule = schedule or []
+
+    # Not implemented
+    @classmethod
+    def calculate_preferences(cls, ):
+        pass
 
 
 class Group:
@@ -51,7 +57,7 @@ class Auditorium:
         self.capacity = capacity
         self.day = day
         self.preferences = self.calculate_preferences(capacity)
-        self.time_slot = time_slot  # Now stores a TimeSlot
+        self.time_slot = time_slot
 
     @classmethod
     def calculate_preferences(cls, capacity):
@@ -78,8 +84,8 @@ class Auditorium:
 
 def overlap(time_slot1, time_slot2):
     return (
-        time_slot1.start_time < time_slot2.end_time
-        and time_slot2.start_time < time_slot1.end_time
+            time_slot1.start_time < time_slot2.end_time
+            and time_slot2.start_time < time_slot1.end_time
     )
 
 
@@ -100,9 +106,9 @@ def gale_shapley_matching(teachers, auditoriums):
         teacher_group_size_category = teacher.group.size_category
 
         for preferred_auditorium in sorted(
-            auditoriums,
-            key=lambda aud: auditoriums[aud].preferences[teacher_group_size_category],
-            reverse=True,
+                auditoriums,
+                key=lambda aud: auditoriums[aud].preferences[teacher_group_size_category].value,
+                reverse=True,
         ):
             auditorium_preference = auditoriums[preferred_auditorium].preferences
             if auditorium_matches[preferred_auditorium] is None:
@@ -118,8 +124,8 @@ def gale_shapley_matching(teachers, auditoriums):
                 )
 
                 if (
-                    auditorium_preference[teacher_group_size_category]
-                    > auditorium_preference[current_matched_teacher_group_size_category]
+                        auditorium_preference[teacher_group_size_category].value
+                        > auditorium_preference[current_matched_teacher_group_size_category].value
                 ):
                     unmatched_teachers.add(current_matched_teacher_name)
                     teacher_matches[teacher_name] = preferred_auditorium
