@@ -2,11 +2,11 @@ from datetime import time
 
 from gale_shapley_matching import TimeSlot, Auditorium, Group, Teacher, gale_shapley_matching
 
-group1 = Group("Calculus Study Group", 5)  # Small group
-group2 = Group("Chemistry Club", 12)  # Medium group
-group3 = Group("History Seminar", 28)  # Large group
+group1 = Group("Calculus Study Group", 5)  # small group
+group2 = Group("Chemistry Club", 12)  # medium group
+group3 = Group("History Seminar", 28)  # large group
 
-# Teachers with single groups only
+# teachers with single groups only
 teacher1 = Teacher("Emily", "Johnson", group1)
 teacher2 = Teacher("Bob", "Williams", group2)
 teacher3 = Teacher("Sarah", "Lee", group3)
