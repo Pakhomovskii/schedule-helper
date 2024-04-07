@@ -1,6 +1,13 @@
+import logging
 from datetime import time
 import streamlit as st
 from gale_shapley_matching import Group, Auditorium, TimeSlot, gale_shapley_matching, Teacher
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(message)s",
+)
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
@@ -8,6 +15,7 @@ if __name__ == "__main__":
         "Calculus Study Group (5 students)": Group("Calculus Study Group", 5),
         "Chemistry Club (12 students)": Group("Chemistry Club", 12),
         "History Seminar (28 students)": Group("History Seminar", 28),
+        "Algorithms Class (15 students)": Group("Algorithms Class", 15),
     }
 
     auditoriums = {
@@ -20,17 +28,21 @@ if __name__ == "__main__":
         "Main Auditorium (capacity 35)": Auditorium(
             "Main Auditorium", 35, "Wednesday", TimeSlot(time(9, 0), time(10, 30))
         ),
+        "Classroom 102 Auditorium (capacity 8)": Auditorium(
+            "Classroom 102", 35, "Wednesday", TimeSlot(time(12, 0), time(10, 30))
+        ),
+
     }
 
     st.title("Teacher Preferences for Auditoriums and Groups")
 
-    tab1, tab2, tab3 = st.tabs(["Pr. Jonson", "Pr. Williams", "Pr. Lee"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Pr. Jonson", "Pr. Williams", "Pr. Lee", "Pr. Bell"])
 
-    teachers = ["Emily Johnson", "Bob Williams", "Sarah Lee"]
+    teachers = ["Emily Johnson", "Bob Williams", "Sarah Lee", "Alexandr Bell"]
 
     teacher_preferences = {}
 
-    for i, tab in enumerate([tab1, tab2, tab3]):
+    for i, tab in enumerate([tab1, tab2, tab3, tab4]):
         with tab:
             st.write(f"Preferences for {teachers[i]}")
 
@@ -64,6 +76,14 @@ if __name__ == "__main__":
             teachers_dict[teacher_name] = teacher_obj
 
         matches, unmatched_teachers = gale_shapley_matching(teachers_dict, auditoriums)
+        logger.info(
+            f"matches: {matches}"
+        )
+        logger.info(
+            f"teacher_preferences: {teacher_preferences}"
+        )
+
+
         st.subheader("Matching Results")
         for teacher, matched_auditorium in matches.items():
             st.write(f"{teacher} -> {matched_auditorium}")
