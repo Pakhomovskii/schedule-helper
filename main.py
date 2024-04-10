@@ -23,8 +23,8 @@ if __name__ == "__main__":
         Auditorium("Classroom 101 10-11 am", 8, "Monday", TimeSlot(time(10, 0), time(11, 30))),
         Auditorium("Lecture Hall B 13-15 pm", 20, "Monday", TimeSlot(time(13, 0), time(15, 30))),
         Auditorium("Main Auditorium 9-10 am", 35, "Monday", TimeSlot(time(9, 0), time(10, 30))),
-        Auditorium("Classroom 102 Auditorium 12-13:00 am", 35, "Monday", TimeSlot(time(12, 0), time(13, 30))),
-        Auditorium("Classroom 103 Auditorium 16-17:30 am", 20, "Monday", TimeSlot(time(16, 0), time(17, 30))),
+        Auditorium("Classroom 102 Auditorium 12-13:00 pm", 35, "Monday", TimeSlot(time(12, 0), time(13, 30))),
+        Auditorium("Classroom 103 Auditorium 16-17:30 pm", 20, "Monday", TimeSlot(time(16, 0), time(17, 30))),
     ]
 
     auditoriums = {auditorium.name: auditorium for auditorium in auditoriums_list}
