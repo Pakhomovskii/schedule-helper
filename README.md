@@ -1,18 +1,13 @@
 # Schedule helper (in progress)
-This application implements a variation of the Gale-Shapley algorithm to 
-create stable schedules for teachers and auditoriums.
-Teachers prioritize their preferred time slots, while auditoriums aim 
-for optimal occupancy based on group sizes.
+The variation of Gale-Shapley algorithm to create stable schedule for teachers
 
 try it here [app](https://pakhomovskii-schedule-helper-main-ijejkw.streamlit.app/)
 
-#### Explanation:
-Stable Matching: This application finds a stable matching between teachers' 
-preferences and auditoriums' availability and capacity constraints.
-Teacher Preferences: Teachers prioritize convenient time slots.
-Auditorium Preferences:
-Auditoriums prefer being fully occupied and 
-give preference to groups that match their capacity (small, medium, or large).
+#### Explanation
+
+THe main idea to find stable matching between preferences teachers and avaliable auditoriums that also have there own preferdnces
+For teachers the main goal to find best time whereas for Universite and its auditoriums it is important to privide optimal upload for auditorium 
+that is why we have SizeCategory.SMALL for capacity <= 10 and SizeCategory.MEDIUM will be high if the group between 10 and 20 
 
 ```python
 def calculate_preferences(cls, capacity):
@@ -40,11 +35,10 @@ def calculate_preferences(cls, capacity):
 the rest of preferences might be diffrent depends on univeriyt intresrest I made it  like SizeCategory.SMALL: Preference.LOW
 for medium and big  auditorims becouse it is difficult for students to find a sit.
 
-#### Additional notes:
-- Prioritizing Full Auditoriums: An auditorium will 
-always try to accommodate a teacher if it has space, ensuring optimal usage of resources.
+#### Additional notes
+- An auditorium ALWAYS prefers being full if possible
 - 
 
-#### Backlog:
-- Time Preferences for Auditoriums: Implement a feature for auditoriums to specify preferred time slots.
+#### Backlog
+- Add time choose for auditoriums, so teachers can pick time for auditorium
 - 
