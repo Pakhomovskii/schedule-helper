@@ -151,11 +151,9 @@ def get_teacher_preference_score(teacher, auditorium):
 
 
 def is_auditorium_suitable(teacher, auditorium, auditorium_matches):
-    return (
-            teacher.group.size_category == auditorium.size_category
-            and not is_schedule_conflict(teacher, auditorium)
-            and len(auditorium_matches[auditorium.name]) == 0
-    )
+    # We can use a strict rule here if necessary.
+    # For example group.size_category == auditorium.size_category
+    return not is_schedule_conflict(teacher, auditorium) and len(auditorium_matches[auditorium.name]) == 0
 
 
 def is_teacher_better_match(new_teacher, auditorium, old_teacher):
