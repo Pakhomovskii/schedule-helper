@@ -6,8 +6,7 @@ for optimal occupancy based on group sizes.
 
 try it here [app](https://pakhomovskii-schedule-helper-main-ijejkw.streamlit.app/)
 
-#### Explanation
-
+#### Explanation:
 Stable Matching: This application finds a stable matching between teachers' 
 preferences and auditoriums' availability and capacity constraints.
 Teacher Preferences: Teachers prioritize convenient time slots.
@@ -41,11 +40,11 @@ def calculate_preferences(cls, capacity):
 the rest of preferences might be diffrent depends on univeriyt intresrest I made it  like SizeCategory.SMALL: Preference.LOW
 for medium and big  auditorims becouse it is difficult for students to find a sit.
 
-#### Additional notes
+#### Additional notes:
 - Prioritizing Full Auditoriums: An auditorium will 
 always try to accommodate a teacher if it has space, ensuring optimal usage of resources.
 - 
 
-#### Backlog
+#### Backlog:
 - Time Preferences for Auditoriums: Implement a feature for auditoriums to specify preferred time slots.
 - 
