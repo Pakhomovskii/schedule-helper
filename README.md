@@ -7,9 +7,11 @@ sizes.
 try it here [app](https://pakhomovskii-schedule-helper-main-ijejkw.streamlit.app/)
 
 #### Explanation:
-Stable Matching: This application finds a stable matching between teachers' preferences and auditoriums' availability 
-and capacity constraints. Teacher Preferences: Teachers prioritize convenient time slots. Auditorium Preferences:
-Auditoriums prefer being fully occupied and give preference to groups that match their capacity 
+- Stable Matching: This application finds a stable matching between teachers' preferences and auditoriums' availability 
+and capacity constraints. 
+Teacher Preferences: Teachers prioritize convenient time slots. 
+- Auditorium Preferences:
+- Auditoriums prefer being fully occupied and give preference to groups that match their capacity 
 (small, medium, or large).
 ```python
 def calculate_preferences(cls, capacity):
