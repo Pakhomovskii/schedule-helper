@@ -1,7 +1,7 @@
 import logging
 from datetime import time
 import streamlit as st
-from gale_shapley_matching import Group, Auditorium, TimeSlot, gale_shapley_matching, Teacher
+from gale_shapley_matching import Group, Auditorium, TimeSlot, gale_shapley_matching, Teacher, TimePeriod
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,32 +13,27 @@ if __name__ == "__main__":
 
     groups = {
         "Calculus Study Group (5 students)": Group("Calculus Study Group", 5),
-        "Chemistry Club (12 students)": Group("Chemistry Club", 12),
-        "History Seminar (28 students)": Group("History Seminar", 28),
+        "Radio Engineering Club (12 students)": Group("Radio Engineering Club", 12),
+        "OOP in Python Seminar (28 students)": Group("OOP in Python Seminar", 28),
         "Algorithms Class (15 students)": Group("Algorithms Class", 15),
+        "Facultative Seminar (15 students)": Group("Facultative Seminar", 15),
     }
 
-    auditoriums = {
-        "Classroom 101 (capacity 8)": Auditorium(
-            "Classroom 101", 8, "Tuesday", TimeSlot(time(10, 0), time(11, 30))
-        ),
-        "Lecture Hall B (capacity 20)": Auditorium(
-            "Lecture Hall B", 20, "Monday", TimeSlot(time(13, 0), time(15, 30))
-        ),
-        "Main Auditorium (capacity 35)": Auditorium(
-            "Main Auditorium", 35, "Wednesday", TimeSlot(time(9, 0), time(10, 30))
-        ),
-        "Classroom 102 Auditorium (capacity 8)": Auditorium(
-            "Classroom 102", 35, "Wednesday", TimeSlot(time(12, 0), time(10, 30))
-        ),
+    auditoriums_list = [
+        Auditorium("Classroom 101 10-11 am", 8, "Monday", TimeSlot(time(10, 0), time(11, 30))),
+        Auditorium("Lecture Hall B 13-15 pm", 20, "Monday", TimeSlot(time(13, 0), time(15, 30))),
+        Auditorium("Main Auditorium 9-10 am", 35, "Monday", TimeSlot(time(9, 0), time(10, 30))),
+        Auditorium("Classroom 102 Auditorium 12-13:00 am", 35, "Monday", TimeSlot(time(12, 0), time(13, 30))),
+        Auditorium("Classroom 103 Auditorium 16-17:30 am", 20, "Monday", TimeSlot(time(16, 0), time(17, 30))),
+    ]
 
-    }
+    auditoriums = {auditorium.name: auditorium for auditorium in auditoriums_list}
 
     st.title("Teacher Preferences for Auditoriums and Groups")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Pr. Jonson", "Pr. Williams", "Pr. Lee", "Pr. Bell"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Dr. Mahmoudreza Babaei", "Dr. Ghadeer Marwan", "William Morrison", "Dr. Alexandr Bell"])
 
-    teachers = ["Emily Johnson", "Bob Williams", "Sarah Lee", "Alexandr Bell"]
+    teachers = ["Mahmoudreza Babaei", "Ghadeer Marwan", "William Morrison", "Alexandr Bell"]
 
     teacher_preferences = {}
 
@@ -58,9 +53,16 @@ if __name__ == "__main__":
                 key=f"auditorium{i}",
             )
 
+            time_preference = st.selectbox(
+                f"Choose your preferred time slot (Teacher {i + 1})",
+                list(TimePeriod),
+                key=f"time_preference{i}"
+            )
+
             teacher_preferences[teachers[i]] = {
                 "group": group_choice,
                 "auditorium": auditorium_choice,
+                "time_preference": time_preference
             }
 
     if st.button("Finalize Choices and Match"):
@@ -71,18 +73,18 @@ if __name__ == "__main__":
             teacher_group = groups[group_name]
 
             name, surname = teacher_name.split()
-            teacher_obj = Teacher(name, surname, teacher_group)
+            time_preference = prefs["time_preference"]
+            teacher_obj = Teacher(name, surname, teacher_group, time_preference)
 
             teachers_dict[teacher_name] = teacher_obj
 
-        matches, unmatched_teachers = gale_shapley_matching(teachers_dict, auditoriums)
+        matches, unmatched_teachers = gale_shapley_matching(teachers_dict, auditoriums.values())
         logger.info(
             f"matches: {matches}"
         )
         logger.info(
             f"teacher_preferences: {teacher_preferences}"
         )
-
 
         st.subheader("Matching Results")
         for teacher, matched_auditorium in matches.items():
