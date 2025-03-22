@@ -4,7 +4,7 @@ This application implements a variation of the Gale-Shapley algorithm to create 
 auditoriums. Teachers prioritize their preferred time slots, while auditoriums aim for optimal occupancy based on group 
 sizes.
 
-try it here [app](https://pakhomovskii-schedule-helper-main-ijejkw.streamlit.app/)
+try it here [app](https://pakhomovskii-schedule-helper-main-ijejkw.streamlit.app/) NOT_ACTIVE =(
 
 #### Explanation:
 - Stable Matching: This application finds a stable matching between teachers' preferences and auditoriums' availability 
