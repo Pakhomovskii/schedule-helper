@@ -132,8 +132,8 @@ class Auditorium:
 
 def overlap(time_slot1, time_slot2):
     return (
-            time_slot1.start_time < time_slot2.end_time
-            and time_slot2.start_time < time_slot1.end_time
+        time_slot1.start_time < time_slot2.end_time
+        and time_slot2.start_time < time_slot1.end_time
     )
 
 
@@ -153,7 +153,10 @@ def get_teacher_preference_score(teacher, auditorium):
 def is_auditorium_suitable(teacher, auditorium, auditorium_matches):
     # We can use a strict rule here if necessary.
     # For example group.size_category == auditorium.size_category
-    return not is_schedule_conflict(teacher, auditorium) and len(auditorium_matches[auditorium.name]) == 0
+    return (
+        not is_schedule_conflict(teacher, auditorium)
+        and len(auditorium_matches[auditorium.name]) == 0
+    )
 
 
 def is_teacher_better_match(new_teacher, auditorium, old_teacher):
@@ -161,13 +164,17 @@ def is_teacher_better_match(new_teacher, auditorium, old_teacher):
     size_mapping = {
         SizeCategory.SMALL: 10,
         SizeCategory.MEDIUM: 20,
-        SizeCategory.LARGE: 30
+        SizeCategory.LARGE: 30,
     }
     if old_teacher is None:
         return True
     # Otherwise, prefer the teacher with the closer size match
-    new_size_diff = abs(auditorium.capacity - size_mapping[new_teacher.group.size_category])
-    old_size_diff = abs(auditorium.capacity - size_mapping[old_teacher.group.size_category])
+    new_size_diff = abs(
+        auditorium.capacity - size_mapping[new_teacher.group.size_category]
+    )
+    old_size_diff = abs(
+        auditorium.capacity - size_mapping[old_teacher.group.size_category]
+    )
     return new_size_diff < old_size_diff
 
 
@@ -181,20 +188,26 @@ def gale_shapley_matching(teachers, auditoriums):
         teacher = teachers[teacher_name]
 
         for preferred_auditorium in sorted(
-                list(auditoriums),
-                key=lambda aud: get_teacher_preference_score(teacher, aud),
-                reverse=True,
+            list(auditoriums),
+            key=lambda aud: get_teacher_preference_score(teacher, aud),
+            reverse=True,
         ):
-            if is_auditorium_suitable(teacher, preferred_auditorium, auditorium_matches):
+            if is_auditorium_suitable(
+                teacher, preferred_auditorium, auditorium_matches
+            ):
                 teacher_matches[teacher_name] = preferred_auditorium
                 auditorium_matches[preferred_auditorium.name].add(teacher_name)
                 break
             else:
-                current_matched_teacher_names = auditorium_matches[preferred_auditorium.name]
+                current_matched_teacher_names = auditorium_matches[
+                    preferred_auditorium.name
+                ]
                 for current_matched_teacher_name in current_matched_teacher_names:
                     current_matched_teacher = teachers[current_matched_teacher_name]
 
-                    if is_teacher_better_match(teacher, preferred_auditorium, current_matched_teacher):
+                    if is_teacher_better_match(
+                        teacher, preferred_auditorium, current_matched_teacher
+                    ):
                         unmatched_teachers.add(current_matched_teacher_name)
                         teacher_matches[teacher_name] = preferred_auditorium
                         auditorium_matches[preferred_auditorium.name] = {teacher_name}

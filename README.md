@@ -1,10 +1,8 @@
 ### Schedule helper (in progress)
 ___
-This application implements a variation of the Gale-Shapley algorithm to create stable schedules for teachers and
+This simple project implements a variation of the [Gale-Shapley algorithm](https://en.wikipedia.org/wiki/Gale–Shapley_algorithm) to create stable schedules for teachers and
 auditoriums. Teachers prioritize their preferred time slots, while auditoriums aim for optimal occupancy based on group 
 sizes.
-
-try it here [app](https://pakhomovskii-schedule-helper-main-ijejkw.streamlit.app/) NOT_ACTIVE =(
 
 #### Explanation:
 - Stable Matching: This application finds a stable matching between teachers' preferences and auditoriums' availability 
@@ -63,9 +61,7 @@ ___
 #### Additional notes:
 - Prioritizing Full Auditoriums: An auditorium will always try to accommodate a teacher if it has space, 
 ensuring optimal usage of resources.
-- 
 
 #### Backlog:
 - Time Preferences for Auditoriums: Implement a feature for auditoriums to specify preferred time slots.
 - Needs test with a bigger data
-- 
