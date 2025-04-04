@@ -279,10 +279,9 @@ def gale_shapley_matching(
         - teacher_matches: Dictionary mapping teacher full_name to their assigned Auditorium object.
         - unmatched_teachers: Set of full_names of teachers who couldn't be matched.
     """
-    unmatched_teacher_names: List[str] = list(teachers.keys())  # Start with all teachers unmatched
-    # Using list allows deterministic popping if needed, though order can vary run-to-run with dict keys usually
+    unmatched_teacher_names: List[str] = list(teachers.keys())
 
-    teacher_matches: Dict[str, Auditorium] = {}  # Stores final assignments T -> A
+    teacher_matches: Dict[str, Auditorium] = {}
     auditorium_matches: Dict[Auditorium, str] = {aud: None for aud in
                                                  auditoriums}  # Stores current assignment A -> T_name
 
