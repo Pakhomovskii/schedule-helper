@@ -2,6 +2,8 @@ import logging
 from datetime import time
 import os
 from dotenv import load_dotenv
+
+
 from gale_shapley_matching import (
     TimeSlot,
     Auditorium,
@@ -11,54 +13,67 @@ from gale_shapley_matching import (
     TimePeriod,
 )
 
-# Настройка логирования
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s")
 logger = logging.getLogger(__name__)
 
 def main():
-    # Загрузка переменных окружения из .env (если используется)
     load_dotenv()
 
-    # Определяем группы
-    groups = {
-        "Calculus Study Group (5 students)": Group("Calculus Study Group", 5),
-        "Radio Engineering Club (12 students)": Group("Radio Engineering Club", 12),
-        "OOP in Python Seminar (28 students)": Group("OOP in Python Seminar", 28),
-        "Algorithms Class (15 students)": Group("Algorithms Class", 15),
-        "Facultative Seminar (15 students)": Group("Facultative Seminar", 15),
+### here we can test other data
+    groups_data = {
+        "Calculus": Group("Calculus Study Group", 5), # Small
+        "Radio Eng": Group("Radio Engineering Club", 12), # Medium
+        "OOP Python": Group("OOP in Python Seminar", 28), # Large
+        "Algorithms": Group("Algorithms Class", 15), # Medium
+        "Facultative": Group("Facultative Seminar", 15), # Medium
+        "Quantum Physics": Group("Quantum Physics Intro", 9), # Small
     }
 
-    # Определяем аудитории
-    auditoriums = [
-        Auditorium("Classroom 101 10-11 am capacity 8", 8, "Monday", TimeSlot(time(10, 0), time(11, 30))),
-        Auditorium("Lecture Hall B 13-15 pm capacity 20", 20, "Monday", TimeSlot(time(13, 0), time(15, 30))),
-        Auditorium("Main Auditorium 9-10 am capacity 35", 35, "Monday", TimeSlot(time(9, 0), time(10, 30))),
-        Auditorium("Classroom 102 12-13:00 pm capacity 35", 35, "Monday", TimeSlot(time(12, 0), time(13, 30))),
-        Auditorium("Classroom 103 16-17:30 pm capacity 20", 20, "Monday", TimeSlot(time(16, 0), time(17, 30))),
+    # auditorium
+    auditoriums_list = [
+        # Используем обновленный __str__ из Auditorium, поэтому имена могут быть проще
+        Auditorium("Classroom 101", 8, "Monday", TimeSlot(time(10, 0), time(11, 30))), # Small, Morning
+        Auditorium("Lecture Hall B", 20, "Monday", TimeSlot(time(13, 0), time(15, 30))), # Medium, Midday
+        Auditorium("Main Auditorium", 35, "Monday", TimeSlot(time(9, 0), time(10, 30))), # Large, Morning
+        Auditorium("Classroom 102", 35, "Monday", TimeSlot(time(12, 0), time(13, 30))), # Large, Midday
+        Auditorium("Classroom 103", 20, "Monday", TimeSlot(time(16, 0), time(17, 30))), # Medium, Afternoon
+        Auditorium("Small Room 5", 10, "Tuesday", TimeSlot(time(9, 0), time(10, 0))), # Small, Morning (на другой день)
     ]
 
-    # Определяем преподавателей и их предпочтения напрямую
-    teachers = {
-        "Mahmoudreza Babaei": Teacher("Mahmoudreza", "Babaei", groups["Calculus Study Group (5 students)"], TimePeriod.MORNING),
-        "Ghadeer Marwan": Teacher("Ghadeer", "Marwan", groups["Radio Engineering Club (12 students)"], TimePeriod.AFTERNOON),
-        "William Morrison": Teacher("William", "Morrison", groups["OOP in Python Seminar (28 students)"], TimePeriod.MORNING),
-        "Alexandr Bell": Teacher("Alexandr", "Bell", groups["Algorithms Class (15 students)"], TimePeriod.MIDDAY),
+    # Teachers
+    teachers_dict = {
+        "Mahmoudreza Babaei": Teacher("Mahmoudreza", "Babaei", groups_data["Calculus"], TimePeriod.MORNING),
+        "Ghadeer Marwan": Teacher("Ghadeer", "Marwan", groups_data["Radio Eng"], TimePeriod.AFTERNOON),
+        "William Morrison": Teacher("William", "Morrison", groups_data["OOP Python"], TimePeriod.MORNING),
+        "Alexandr Bell": Teacher("Alexandr", "Bell", groups_data["Algorithms"], TimePeriod.MIDDAY),
+        # --- Добавленные преподаватели ---
+        "Maria Curie": Teacher("Maria", "Curie", groups_data["Quantum Physics"], TimePeriod.MORNING),
+        "John Doe": Teacher("John", "Doe", groups_data["Facultative"], TimePeriod.MIDDAY),
     }
 
-    # Выполнение алгоритма сопоставления
-    matches, unmatched_teachers = gale_shapley_matching(teachers, auditoriums)
-    logger.info(f"Matches: {matches}")
-    logger.info(f"Unmatched Teachers: {unmatched_teachers}")
 
-    # Вывод результатов в консоль
+    matches, unmatched = gale_shapley_matching(teachers_dict, auditoriums_list)
+    logger.info(f"Matching process complete.")
+
+
+    print("\n--- Matching Results ---")
     print("Matches:")
-    for teacher, auditorium in matches.items():
-        print(f"{teacher} -> {auditorium}")
+    if matches:
+        for teacher_name, auditorium in sorted(matches.items()):
+            print(f"- {teacher_name} -> {auditorium}")
+    else:
+        print("No matches found.")
 
-    if unmatched_teachers:
-        print("\nUnmatched Teachers:")
-        for teacher in unmatched_teachers:
-            print(teacher)
+    if unmatched:
+        print("Unmatched Teachers:")
+        for teacher_name in sorted(list(unmatched)):
+            print(f"- {teacher_name}")
+    else:
+        print("All teachers were matched.")
+
+    print("------------------------\n")
+
 
 if __name__ == "__main__":
     main()

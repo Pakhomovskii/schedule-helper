@@ -1,17 +1,22 @@
+# gale_shapley_matching.py
+
 import uuid
+import logging
+from datetime import time, datetime
 from enum import Enum
+from typing import List, Dict, Tuple, Optional, Set, Any
 
 
 class SizeCategory(Enum):
-    SMALL = "Small"
-    MEDIUM = "Medium"
-    LARGE = "Large"
+    SMALL = "Small (<=10)"
+    MEDIUM = "Medium (11-20)"
+    LARGE = "Large (>20)"
 
 
 class TimePeriod(Enum):
-    MORNING = "Morning"
-    MIDDAY = "Midday"
-    AFTERNOON = "Afternoon"
+    MORNING = "Morning (<12:00)"
+    MIDDAY = "Midday (12:00-14:59)"
+    AFTERNOON = "Afternoon (>=15:00)"
 
 
 class Preference(Enum):
@@ -20,197 +25,328 @@ class Preference(Enum):
     LOW = -1
 
 
-class Teacher:
-    def __init__(self, name, surname, group, time_preference, schedule=None):
-        self.id = uuid.uuid4()
-        self.name = name
-        self.surname = surname
-        self.group = group
-        self.time_preference = time_preference
-        self.schedule = schedule or []
+class TimeSlot:
+    def __init__(self, start_time: time, end_time: time):
+        if not isinstance(start_time, time) or not isinstance(end_time, time):
+            raise TypeError("start_time and end_time must be datetime.time objects")
+        if start_time >= end_time:
+            raise ValueError(f"Start time {start_time} must be before end time {end_time}")
+        self.start_time = start_time
+        self.end_time = end_time
+        self.period = self._get_slot_period()  # Calculate period on initialization
 
-    @classmethod
-    def calculate_preferences(cls, time):
-        match time:
-            case time if time == "Morning":
-                return {
-                    TimePeriod.MORNING: Preference.HIGH,
-                    TimePeriod.AFTERNOON: Preference.LOW,
-                    TimePeriod.MIDDAY: Preference.LOW,
-                }
-            case time if time == "Midday":
-                return {
-                    TimePeriod.MIDDAY: Preference.HIGH,
-                    TimePeriod.AFTERNOON: Preference.LOW,
-                    TimePeriod.MORNING: Preference.LOW,
-                }
-            case time if time == "Afternoon":
-                return {
-                    TimePeriod.AFTERNOON: Preference.HIGH,
-                    TimePeriod.MORNING: Preference.LOW,
-                    TimePeriod.MIDDAY: Preference.LOW,
-                }
+    def _get_slot_period(self) -> TimePeriod:
+        """Determines the TimePeriod based on the start time."""
+        start_hour = self.start_time.hour
+        if start_hour < 12:
+            return TimePeriod.MORNING
+        elif 12 <= start_hour < 15:
+            return TimePeriod.MIDDAY
+        else:  # start_hour >= 15
+            return TimePeriod.AFTERNOON
+
+    def __str__(self) -> str:
+        return f"{self.start_time.strftime('%H:%M')}-{self.end_time.strftime('%H:%M')} ({self.period.value})"
+
+    def overlaps(self, other: 'TimeSlot') -> bool:
+        """Checks if this time slot overlaps with another."""
+        return self.start_time < other.end_time and other.start_time < self.end_time
 
 
 class Group:
-    def __init__(self, name, students):
+    def __init__(self, name: str, num_students: int):
+        if num_students <= 0:
+            raise ValueError("Number of students must be positive.")
         self.id = uuid.uuid4()
         self.name = name
-        self.size_category = self.get_size_category(students)
-        self.size = self.size_category.value
+        self.num_students = num_students
+        self.size_category = self._get_size_category(num_students)
 
-    @classmethod
-    def get_size_category(cls, students):
-        match students:
-            case students if students <= 10:
-                return SizeCategory.SMALL
-            case students if students <= 20:
-                return SizeCategory.MEDIUM
-            case _:  # Default case for students > 20
-                return SizeCategory.LARGE
+    @staticmethod
+    def _get_size_category(students: int) -> SizeCategory:
+        if students <= 10:
+            return SizeCategory.SMALL
+        elif students <= 20:
+            return SizeCategory.MEDIUM
+        else:  # students > 20
+            return SizeCategory.LARGE
 
-
-class TimeSlot:
-    def __init__(self, start_time, end_time):
-        self.start_time = start_time
-        self.end_time = end_time
-
-    @classmethod
-    def get_slot_period(cls, start_time, end_time):
-        match start_time, end_time:
-            case end_time if end_time < 12:
-                return TimePeriod.MORNING
-            case start_time, end_time if end_time >= 12 and start_time < 15:
-                return TimePeriod.MIDDAY
-            case start_time if start_time >= 15:
-                return TimePeriod.AFTERNOON
+    def __str__(self) -> str:
+        return f"{self.name} ({self.num_students} students, {self.size_category.value})"
 
 
 class Auditorium:
-    def __init__(self, name, capacity, day, time_slot):
+    def __init__(self, name: str, capacity: int, day: str, time_slot: TimeSlot):
+        if capacity <= 0:
+            raise ValueError("Capacity must be positive.")
+        self.id = uuid.uuid4()
         self.name = name
         self.capacity = capacity
-        self.day = day
-        self.preferences = self.calculate_preferences(capacity)
+        self.day = day  # Assuming simple day string for now
         self.time_slot = time_slot
-        self.size_category = self.get_size_category(capacity)
+        self.size_category = self._get_size_category(capacity)
+        # Preferences based on how well *group sizes* fit this auditorium's category
+        self.preferences = self._calculate_preferences(self.size_category)
 
-    def __str__(self):
-        return f"{self.name} (Capacity: {self.capacity})"
-
-    @classmethod
-    def get_size_category(cls, capacity):
+    @staticmethod
+    def _get_size_category(capacity: int) -> SizeCategory:
+        # Consistent with Group size category logic for easier comparison
         if capacity <= 10:
             return SizeCategory.SMALL
         elif capacity <= 20:
             return SizeCategory.MEDIUM
-        else:
+        else:  # capacity > 20
             return SizeCategory.LARGE
 
-    @classmethod
-    def calculate_preferences(cls, capacity):
-        match capacity:
-            case capacity if capacity <= 10:
-                return {
-                    SizeCategory.SMALL: Preference.HIGH,
-                    SizeCategory.MEDIUM: Preference.MEDIUM,
-                    SizeCategory.LARGE: Preference.LOW,
-                }
-            case capacity if capacity <= 20:
-                return {
-                    SizeCategory.SMALL: Preference.LOW,
-                    SizeCategory.MEDIUM: Preference.HIGH,
-                    SizeCategory.LARGE: Preference.MEDIUM,
-                }
-            case _:  # Default case for capacity > 20
-                return {
-                    SizeCategory.SMALL: Preference.LOW,
-                    SizeCategory.MEDIUM: Preference.MEDIUM,
-                    SizeCategory.LARGE: Preference.HIGH,
-                }
+    @staticmethod
+    def _calculate_preferences(aud_size_category: SizeCategory) -> Dict[SizeCategory, Preference]:
+        """How much this auditorium prefers groups of different size categories."""
+        prefs = {}
+        # Prefers groups that match its own size category perfectly
+        prefs[aud_size_category] = Preference.HIGH
+
+        # Example preference logic (can be customized)
+        if aud_size_category == SizeCategory.SMALL:
+            prefs[SizeCategory.MEDIUM] = Preference.LOW
+            prefs[SizeCategory.LARGE] = Preference.LOW
+        elif aud_size_category == SizeCategory.MEDIUM:
+            prefs[SizeCategory.SMALL] = Preference.MEDIUM  # Might accept small groups
+            prefs[SizeCategory.LARGE] = Preference.LOW  # Less preferred
+        elif aud_size_category == SizeCategory.LARGE:
+            prefs[SizeCategory.SMALL] = Preference.LOW
+            prefs[SizeCategory.MEDIUM] = Preference.MEDIUM  # Might accept medium groups
+
+        # Ensure all categories are present
+        for cat in SizeCategory:
+            if cat not in prefs:
+                # Default preference if not explicitly set (e.g., Large aud for Large group was HIGH)
+                if cat == aud_size_category: continue  # Already set to HIGH
+                # Assign a default low/medium preference if needed, adjust logic as required
+                prefs[cat] = Preference.MEDIUM  # Example default
+
+        return prefs
+
+    def __str__(self) -> str:
+        return f"{self.name} (Cap: {self.capacity}, {self.size_category.value}, Day: {self.day}, Slot: {self.time_slot})"
+
+    def __hash__(self):
+        # Needed to use Auditorium objects as dictionary keys
+        return hash(self.id)
+
+    def __eq__(self, other):
+        # Needed for comparing Auditorium objects
+        if not isinstance(other, Auditorium):
+            return NotImplemented
+        return self.id == other.id
 
 
-def overlap(time_slot1, time_slot2):
-    return (
-        time_slot1.start_time < time_slot2.end_time
-        and time_slot2.start_time < time_slot1.end_time
-    )
+class Teacher:
+    def __init__(self, name: str, surname: str, group: Group, time_preference: TimePeriod,
+                 schedule: Optional[List[Auditorium]] = None):
+        self.id = uuid.uuid4()
+        self.name = name
+        self.surname = surname
+        self.full_name = f"{name} {surname}"
+        self.group = group
+        self.time_preference = time_preference  # Teacher's preferred TimePeriod
+        # Schedule stores assigned Auditoriums (which include TimeSlots)
+        self.schedule: List[Auditorium] = schedule or []
+
+    @staticmethod
+    def calculate_time_preferences(pref: TimePeriod) -> Dict[TimePeriod, Preference]:
+        """ How much a teacher prefers teaching in each time period, based on their main preference. """
+        prefs = {p: Preference.LOW for p in TimePeriod}  # Default to low
+        prefs[pref] = Preference.HIGH  # Strong preference for their chosen period
+        # preference for adjacent slots if desired # TODO
+        # Example: If pref is MIDDAY, maybe MORNING/AFTERNOON are MEDIUM?
+        return prefs
+
+    def __str__(self) -> str:
+        return f"{self.full_name} (Group: {self.group.name}, Prefers: {self.time_preference.value})"
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, Teacher):
+            return NotImplemented
+        return self.id == other.id
 
 
-def is_schedule_conflict(teacher, auditorium):
-    return auditorium.day in [aud.day for aud in teacher.schedule] and any(
-        overlap(auditorium.time_slot, aud.time_slot) for aud in teacher.schedule
-    )
+# --- Matching Logic Helper Functions ---
+
+def is_schedule_conflict(teacher: Teacher, auditorium: Auditorium) -> bool:
+    """Checks if assigning the auditorium conflicts with the teacher's existing schedule."""
+    for assigned_aud in teacher.schedule:
+        if assigned_aud.day == auditorium.day and assigned_aud.time_slot.overlaps(auditorium.time_slot):
+            return True
+    return False
 
 
-def get_teacher_preference_score(teacher, auditorium):
-    # Prioritize time match, with some consideration for matching capacity size
-    time_score = 3 if teacher.time_preference == auditorium.time_slot.start_time else 1
-    size_score = 1 if teacher.group.size_category == auditorium.size_category else 0.5
+def get_teacher_preference_score(teacher: Teacher, auditorium: Auditorium) -> float:
+    """
+    Calculates a score representing how much a teacher prefers an auditorium.
+    Higher score means higher preference.
+    Returns -1.0 if the teacher's group doesn't fit.
+    """
+    # CRITICAL: Teacher must fit in the auditorium
+    if teacher.group.num_students > auditorium.capacity:
+        return -1.0  # Impossible match, lowest score
+
+    # 1. Time Preference Score (Primary)
+    auditorium_period = auditorium.time_slot.period
+    time_match_preference = Teacher.calculate_time_preferences(teacher.time_preference).get(auditorium_period,
+                                                                                            Preference.LOW)
+
+    # Convert Preference enum to a numerical score (e.g., HIGH=3, MEDIUM=1, LOW=0)
+    time_score = 0
+    if time_match_preference == Preference.HIGH:
+        time_score = 3
+    elif time_match_preference == Preference.MEDIUM:
+        time_score = 1
+    # LOW gives time_score = 0
+
+    # 2. Size Fit Score (Secondary) - How well the group fits the auditorium
+    # Using the auditorium's preference for the teacher's group size category
+    size_match_preference = auditorium.preferences.get(teacher.group.size_category, Preference.LOW)
+    size_score = 0
+    if size_match_preference == Preference.HIGH:
+        size_score = 1.0
+    elif size_match_preference == Preference.MEDIUM:
+        size_score = 0.5
+    # LOW gives size_score = 0
+
+    # Combine scores (prioritizing time)
+    # Adjust weighting as needed
     return time_score + size_score
 
 
-def is_auditorium_suitable(teacher, auditorium, auditorium_matches):
-    # We can use a strict rule here if necessary.
-    # For example group.size_category == auditorium.size_category
-    return (
-        not is_schedule_conflict(teacher, auditorium)
-        and len(auditorium_matches[auditorium.name]) == 0
-    )
+def is_teacher_better_match(
+        new_teacher: Teacher,
+        auditorium: Auditorium,
+        current_teacher: Teacher
+) -> bool:
+    """
+    Checks if the new_teacher is a better match for the auditorium than the current_teacher.
+    This reflects the *auditorium's* preference.
+    """
+    # CRITICAL: New teacher must fit
+    if new_teacher.group.num_students > auditorium.capacity:
+        return False  # Cannot be a better match if they don't fit
 
+    # Preference based on how well the group size fits the auditorium category
+    new_teacher_fit = auditorium.preferences.get(new_teacher.group.size_category, Preference.LOW)
+    current_teacher_fit = auditorium.preferences.get(current_teacher.group.size_category, Preference.LOW)
 
-def is_teacher_better_match(new_teacher, auditorium, old_teacher):
-    # An auditorium ALWAYS prefers being full if possible
-    size_mapping = {
-        SizeCategory.SMALL: 10,
-        SizeCategory.MEDIUM: 20,
-        SizeCategory.LARGE: 30,
-    }
-    if old_teacher is None:
+    # Compare preference levels (HIGH > MEDIUM > LOW)
+    if new_teacher_fit.value > current_teacher_fit.value:
         return True
-    # Otherwise, prefer the teacher with the closer size match
-    new_size_diff = abs(
-        auditorium.capacity - size_mapping[new_teacher.group.size_category]
-    )
-    old_size_diff = abs(
-        auditorium.capacity - size_mapping[old_teacher.group.size_category]
-    )
-    return new_size_diff < old_size_diff
+    elif new_teacher_fit.value < current_teacher_fit.value:
+        return False
+    else:
+        # Tie-breaking (optional): If preferences are equal, maybe prefer fuller?
+        # Example: Prefer teacher whose group size is closer to capacity, but not over.
+        new_size_diff = auditorium.capacity - new_teacher.group.num_students
+        current_size_diff = auditorium.capacity - current_teacher.group.num_students
+        # Prefer smaller positive difference (closer to capacity without exceeding)
+        if new_size_diff >= 0 and current_size_diff >= 0:
+            return new_size_diff < current_size_diff  # Smaller difference is better
+        elif new_size_diff >= 0:  # Only new teacher fits perfectly or leaves less space
+            return True
+        elif current_size_diff >= 0:  # Only current teacher fits perfectly or leaves less space
+            return False
+        else:  # Neither fits perfectly, stick with current (or use another tie-breaker)
+            return False
+        # Simpler tie-breaker: keep the current teacher if preferences are equal
+        # return False
 
 
-def gale_shapley_matching(teachers, auditoriums):
-    unmatched_teachers = set(teachers.keys())
-    teacher_matches = {}
-    auditorium_matches = {auditorium.name: set() for auditorium in auditoriums}
+# --- Gale-Shapley Algorithm Implementation ---
 
-    while unmatched_teachers:
-        teacher_name = unmatched_teachers.pop()
+def gale_shapley_matching(
+        teachers: Dict[str, Teacher],  # Use teacher full_name as key
+        auditoriums: List[Auditorium]
+) -> Tuple[Dict[str, Auditorium], Set[str]]:
+    """
+    Performs Gale-Shapley matching where teachers propose to auditoriums.
+
+    Args:
+        teachers: Dictionary of teachers (key: full_name, value: Teacher object).
+        auditoriums: List of available Auditorium objects.
+
+    Returns:
+        A tuple containing:
+        - teacher_matches: Dictionary mapping teacher full_name to their assigned Auditorium object.
+        - unmatched_teachers: Set of full_names of teachers who couldn't be matched.
+    """
+    unmatched_teacher_names: List[str] = list(teachers.keys())  # Start with all teachers unmatched
+    # Using list allows deterministic popping if needed, though order can vary run-to-run with dict keys usually
+
+    teacher_matches: Dict[str, Auditorium] = {}  # Stores final assignments T -> A
+    auditorium_matches: Dict[Auditorium, str] = {aud: None for aud in
+                                                 auditoriums}  # Stores current assignment A -> T_name
+
+    proposal_attempts: Dict[str, Set[Auditorium]] = {name: set() for name in
+                                                     teachers}  # Track proposals to avoid loops/redundancy
+
+    while unmatched_teacher_names:
+        teacher_name = unmatched_teacher_names.pop(0)  # Process one teacher at a time
         teacher = teachers[teacher_name]
 
-        for preferred_auditorium in sorted(
-            list(auditoriums),
-            key=lambda aud: get_teacher_preference_score(teacher, aud),
-            reverse=True,
-        ):
-            if is_auditorium_suitable(
-                teacher, preferred_auditorium, auditorium_matches
-            ):
+        # --- Teacher ranks suitable auditoriums ---
+        possible_auditoriums = []
+        for aud in auditoriums:
+            # Must fit, no schedule conflict, and teacher hasn't proposed here yet
+            if (teacher.group.num_students <= aud.capacity and
+                    not is_schedule_conflict(teacher, aud) and
+                    aud not in proposal_attempts[teacher_name]):
+                score = get_teacher_preference_score(teacher, aud)
+                if score >= 0:  # Only consider valid matches (score >= 0)
+                    possible_auditoriums.append((score, aud))
+
+        # Sort potential auditoriums by teacher's preference (highest score first)
+        possible_auditoriums.sort(key=lambda x: x[0], reverse=True)
+
+        # --- Teacher proposes down their ranked list ---
+        made_match = False
+        for score, preferred_auditorium in possible_auditoriums:
+            proposal_attempts[teacher_name].add(preferred_auditorium)  # Mark proposal attempt
+
+            current_match_name = auditorium_matches.get(preferred_auditorium)
+
+            if current_match_name is None:
+                # Auditorium is free: Assign teacher
                 teacher_matches[teacher_name] = preferred_auditorium
-                auditorium_matches[preferred_auditorium.name].add(teacher_name)
-                break
+                auditorium_matches[preferred_auditorium] = teacher_name
+                teacher.schedule.append(preferred_auditorium)  # Add to teacher's internal schedule
+                made_match = True
+                break  # Teacher is matched, move to next unmatched teacher
+
             else:
-                current_matched_teacher_names = auditorium_matches[
-                    preferred_auditorium.name
-                ]
-                for current_matched_teacher_name in current_matched_teacher_names:
-                    current_matched_teacher = teachers[current_matched_teacher_name]
+                # Auditorium is occupied: Check if auditorium prefers this new teacher
+                current_matched_teacher = teachers[current_match_name]
+                if is_teacher_better_match(teacher, preferred_auditorium, current_matched_teacher):
+                    # New teacher is better: Replace old teacher
+                    # Assign new teacher
+                    teacher_matches[teacher_name] = preferred_auditorium
+                    auditorium_matches[preferred_auditorium] = teacher_name
+                    teacher.schedule.append(preferred_auditorium)
 
-                    if is_teacher_better_match(
-                        teacher, preferred_auditorium, current_matched_teacher
-                    ):
-                        unmatched_teachers.add(current_matched_teacher_name)
-                        teacher_matches[teacher_name] = preferred_auditorium
-                        auditorium_matches[preferred_auditorium.name] = {teacher_name}
-                        break
+                    # Unassign old teacher
+                    del teacher_matches[current_match_name]
+                    current_matched_teacher.schedule.remove(preferred_auditorium)  # Remove from old teacher's schedule
+                    unmatched_teacher_names.append(current_match_name)  # Old teacher becomes unmatched again
 
-    return teacher_matches, unmatched_teachers
+                    made_match = True
+                    break  # Teacher is matched, move to next unmatched teacher
+                # Else: Auditorium prefers current teacher, proposing teacher remains unmatched (for now) and tries next auditorium
+
+        if not made_match and teacher_name not in teacher_matches:
+            # If teacher went through all suitable options and wasn't matched, they remain technically unmatched
+            # but already popped from list. We'll collect final unmatched set at the end.
+            pass
+
+    # Determine final set of unmatched teachers
+    final_unmatched_teachers = {name for name in teachers if name not in teacher_matches}
+
+    return teacher_matches, final_unmatched_teachers
