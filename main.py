@@ -32,7 +32,7 @@ def main():
 
     # auditorium
     auditoriums_list = [
-        # Используем обновленный __str__ из Auditorium, поэтому имена могут быть проще
+  
         Auditorium("Classroom 101", 8, "Monday", TimeSlot(time(10, 0), time(11, 30))), # Small, Morning
         Auditorium("Lecture Hall B", 20, "Monday", TimeSlot(time(13, 0), time(15, 30))), # Medium, Midday
         Auditorium("Main Auditorium", 35, "Monday", TimeSlot(time(9, 0), time(10, 30))), # Large, Morning
@@ -47,7 +47,8 @@ def main():
         "Ghadeer Marwan": Teacher("Ghadeer", "Marwan", groups_data["Radio Eng"], TimePeriod.AFTERNOON),
         "William Morrison": Teacher("William", "Morrison", groups_data["OOP Python"], TimePeriod.MORNING),
         "Alexandr Bell": Teacher("Alexandr", "Bell", groups_data["Algorithms"], TimePeriod.MIDDAY),
-        # --- Добавленные преподаватели ---
+        
+        
         "Maria Curie": Teacher("Maria", "Curie", groups_data["Quantum Physics"], TimePeriod.MORNING),
         "John Doe": Teacher("John", "Doe", groups_data["Facultative"], TimePeriod.MIDDAY),
     }
